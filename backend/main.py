@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, status, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
+from datetime import date
 
 from . import crud, models, schemas, google_sheets
 from .database import SessionLocal, engine
@@ -84,7 +85,6 @@ def create_transaction(
         asset_id=db_asset.id,
         portfolio_id=db_portfolio.id
     )
-    # To ensure `asset` relationship is loaded for response model
     db.refresh(new_transaction)
     return new_transaction
 
@@ -138,11 +138,52 @@ def get_portfolio_summary(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
-    # This is a stub for portfolio performance analysis.
-    # In a real application, you would fetch transactions for the user's portfolios,
-    # calculate performance based on the selected period, and potentially fetch
-    # current prices for assets.
-    return {"period": period, "returns": "N/A", "message": "Portfolio summary calculation is not yet implemented."}
+    # Get all transactions for the user's portfolios
+    user_portfolios = crud.get_portfolios(db, user_id)
+    if not user_portfolios:
+        return {
+            "period": period,
+            "current_total": 0,
+            "rate_of_return": 0,
+            "message": "No portfolios found for this user."
+        }
+
+    all_transactions = []
+    for portfolio in user_portfolios:
+        transactions_for_portfolio = db.query(models.Transaction).options(joinedload(models.Transaction.asset)).filter(models.Transaction.portfolio_id == portfolio.id).all()
+        all_transactions.extend(transactions_for_portfolio)
+
+    if not all_transactions:
+        return {
+            "period": period,
+            "current_total": 0,
+            "rate_of_return": 0,
+            "message": "No transactions found for this period."
+        }
+
+    current_total = 0.0
+    initial_investment = 0.0
+
+    for transaction in all_transactions:
+        if transaction.type == "Buy":
+            current_total -= transaction.price # Outflow
+            initial_investment += transaction.price
+        elif transaction.type == "Sell":
+            current_total += transaction.price # Inflow
+    
+    # For simplicity, current_total will be the net of buys and sells.
+    # In a real app, this would consider current asset values.
+
+    rate_of_return = 0.0
+    if initial_investment > 0:
+        rate_of_return = (current_total / initial_investment) # This is a simplified calculation
+
+    return {
+        "period": period,
+        "current_total": round(current_total, 2),
+        "rate_of_return": round(rate_of_return * 100, 2), # As percentage
+        "message": "Portfolio summary calculated."
+    }
 
 
 @app.get("/google_sheets/read_transactions")
