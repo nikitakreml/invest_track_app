@@ -29,7 +29,7 @@
     <h2>All Transactions</h2>
     <ul>
       <li v-for="transaction in transactions" :key="transaction.id">
-        {{ transaction.asset_name }} - {{ transaction.date }} - {{ transaction.type }} - {{ transaction.price }}
+        {{ (transaction.asset && transaction.asset.name) || transaction.asset_name }} - {{ transaction.date }} - {{ transaction.type }} - {{ transaction.price }}
         <button @click="editTransaction(transaction)">Edit</button>
         <button @click="deleteTransaction(transaction.id)">Delete</button>
       </li>

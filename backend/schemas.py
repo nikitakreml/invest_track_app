@@ -41,18 +41,21 @@ class Asset(AssetBase):
     class Config:
         from_attributes = True
 
+# Base transaction fields shared across response models
 class TransactionBase(BaseModel):
     date: date
     type: str
     price: float
-    asset_id: int
-    portfolio_id: int
 
+# Create schema accepts asset_name from client
 class TransactionCreate(TransactionBase):
-    pass
+    asset_name: str
 
+# Response schema returns nested asset instead of asset_name
 class Transaction(TransactionBase):
     id: int
+    portfolio_id: int
+    asset: Asset
 
     class Config:
         from_attributes = True

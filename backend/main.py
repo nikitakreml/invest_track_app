@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -8,6 +9,19 @@ from .database import SessionLocal, engine
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+origins = [
+    "http://localhost",
+    "http://localhost:5173",  # Your Vue.js frontend origin
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def get_db():
     db = SessionLocal()
@@ -50,36 +64,61 @@ def read_transactions(
 def create_transaction(
     transaction: schemas.TransactionCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id) # user_id will be used later for portfolios
+    user_id: int = Depends(get_current_user_id)
 ):
-    # For now, let's ensure the asset exists or create it
-    db_asset = crud.get_asset_by_ticker(db, transaction.asset_name) # Assuming asset_name is passed in transaction for simplicity here
+    db_asset = crud.get_asset_by_ticker(db, transaction.asset_name)
     if not db_asset:
         db_asset = crud.create_asset(db, schemas.AssetCreate(name=transaction.asset_name, ticker=transaction.asset_name))
-    transaction.asset_id = db_asset.id
-
-    # For now, let's assume a default portfolio for the user, or create one.
-    # In a real app, this would be selected by the user.
+    
     portfolios = crud.get_portfolios(db, user_id)
     if not portfolios:
         db_portfolio = crud.create_user_portfolio(db, schemas.PortfolioCreate(name="Default Portfolio"), user_id)
     else:
         db_portfolio = portfolios[0]
-    transaction.portfolio_id = db_portfolio.id
     
-    return crud.create_transaction(db=db, transaction=transaction)
+    new_transaction = crud.create_transaction(
+        db=db,
+        date=transaction.date,
+        type=transaction.type,
+        price=transaction.price,
+        asset_id=db_asset.id,
+        portfolio_id=db_portfolio.id
+    )
+    # To ensure `asset` relationship is loaded for response model
+    db.refresh(new_transaction)
+    return new_transaction
 
 
 @app.put("/transactions/{transaction_id}", response_model=schemas.Transaction)
 def update_transaction(
     transaction_id: int,
     transaction: schemas.TransactionCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
 ):
-    db_transaction = crud.update_transaction(db, transaction_id, transaction)
-    if not db_transaction:
+    db_asset = crud.get_asset_by_ticker(db, transaction.asset_name)
+    if not db_asset:
+        db_asset = crud.create_asset(db, schemas.AssetCreate(name=transaction.asset_name, ticker=transaction.asset_name))
+    
+    portfolios = crud.get_portfolios(db, user_id)
+    if not portfolios:
+        db_portfolio = crud.create_user_portfolio(db, schemas.PortfolioCreate(name="Default Portfolio"), user_id)
+    else:
+        db_portfolio = portfolios[0]
+    
+    updated_transaction = crud.update_transaction(
+        db=db,
+        transaction_id=transaction_id,
+        date=transaction.date,
+        type=transaction.type,
+        price=transaction.price,
+        asset_id=db_asset.id,
+        portfolio_id=db_portfolio.id
+    )
+    if not updated_transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    return db_transaction
+    db.refresh(updated_transaction)
+    return updated_transaction
 
 
 @app.delete("/transactions/{transaction_id}")

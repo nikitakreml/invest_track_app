@@ -1,4 +1,5 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from datetime import date
 from . import models, schemas
 
 def get_user(db: Session, user_id: int):
@@ -20,22 +21,30 @@ def update_user_api_key(db: Session, user_id: int, api_key: str):
     return db_user
 
 def get_transactions(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Transaction).offset(skip).limit(limit).all()
+    return db.query(models.Transaction).options(joinedload(models.Transaction.asset)).offset(skip).limit(limit).all()
 
-def create_transaction(db: Session, transaction: schemas.TransactionCreate):
-    db_transaction = models.Transaction(**transaction.model_dump())
+def create_transaction(db: Session, date: date, type: str, price: float, asset_id: int, portfolio_id: int):
+    db_transaction = models.Transaction(date=date, type=type, price=price, asset_id=asset_id, portfolio_id=portfolio_id)
     db.add(db_transaction)
     db.commit()
     db.refresh(db_transaction)
-    return db_transaction
+    # Load the asset relationship after refresh
+    db_transaction_with_asset = db.query(models.Transaction).options(joinedload(models.Transaction.asset)).filter(models.Transaction.id == db_transaction.id).first()
+    return db_transaction_with_asset
 
-def update_transaction(db: Session, transaction_id: int, transaction: schemas.TransactionCreate):
+def update_transaction(db: Session, transaction_id: int, date: date, type: str, price: float, asset_id: int, portfolio_id: int):
     db_transaction = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
     if db_transaction:
-        for key, value in transaction.model_dump().items():
-            setattr(db_transaction, key, value)
+        db_transaction.date = date
+        db_transaction.type = type
+        db_transaction.price = price
+        db_transaction.asset_id = asset_id
+        db_transaction.portfolio_id = portfolio_id
         db.commit()
         db.refresh(db_transaction)
+        # Load the asset relationship after refresh
+        db_transaction_with_asset = db.query(models.Transaction).options(joinedload(models.Transaction.asset)).filter(models.Transaction.id == db_transaction.id).first()
+        return db_transaction_with_asset
     return db_transaction
 
 def delete_transaction(db: Session, transaction_id: int):
