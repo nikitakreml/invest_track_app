@@ -6,6 +6,7 @@ from datetime import date, timedelta
 
 from . import crud, models, schemas, google_sheets
 from .database import SessionLocal, engine
+from .tinkoff_invest import get_asset_price_by_date # Import the new function
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -201,6 +202,24 @@ def get_portfolio_summary(
         "message": "Portfolio summary calculated."
     }
 
+
+@app.get("/asset/estimate-price")
+def estimate_asset_price(
+    ticker: str,
+    target_date: date,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    user = crud.get_user(db, user_id)
+    if not user or not user.google_sheets_api_key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tinkoff Invest API token not set for user")
+    
+    price = get_asset_price_by_date(ticker, target_date, user.google_sheets_api_key)
+    
+    if price is None:
+        raise HTTPException(status_code=404, detail=f"Could not retrieve price for {ticker} on {target_date}.")
+    
+    return {"ticker": ticker, "date": target_date, "price": price}
 
 @app.get("/google_sheets/read_transactions")
 def read_sheets_transactions(
