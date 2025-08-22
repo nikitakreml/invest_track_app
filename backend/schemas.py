@@ -59,3 +59,6 @@ class Transaction(TransactionBase):
 
     class Config:
         from_attributes = True
+
+class GoogleSheetsApiKey(BaseModel):
+    api_key: str

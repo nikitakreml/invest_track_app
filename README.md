@@ -81,3 +81,12 @@ A Telegram-style web application for tracking purchases/sales of user assets (st
 
 - The Google Sheets integration is currently stubbed out in `backend/google_sheets.py`.
 - You can interact with the dummy Google Sheets functions via the `/settings` page in the frontend.
+
+## Color Palette
+
+- **Primary Background**: `#F2F2F2`
+- **Secondary Background/Borders**: `#CBCBCB`
+- **Accent/Success**: `#174D38`
+- **Danger/Error**: `#4D1717`
+
+font: Montserrat

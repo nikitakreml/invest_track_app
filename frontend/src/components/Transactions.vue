@@ -1,56 +1,58 @@
 <template>
-  <div>
+  <div class="transactions-container">
     <h1>Transactions Log</h1>
-    <h2>Add/Edit Transaction</h2>
-    <form @submit.prevent="submitTransaction">
-      <div>
-        <label for="assetName">Asset Name:</label>
-        <input type="text" id="assetName" v-model="transactionForm.asset_name" required />
-      </div>
-      <div>
-        <label for="date">Date:</label>
-        <input type="date" id="date" v-model="transactionForm.date" required />
-      </div>
-      <div>
-        <label for="type">Type:</label>
-        <select id="type" v-model="transactionForm.type" required>
-          <option value="Buy">Buy</option>
-          <option value="Sell">Sell</option>
-        </select>
-      </div>
-      <div>
-        <label for="price">Price:</label>
-        <input type="number" id="price" v-model="transactionForm.price" required />
-      </div>
-      <button type="submit">{{ editingTransactionId ? 'Update' : 'Add' }} Transaction</button>
-      <button type="button" v-if="editingTransactionId" @click="cancelEdit">Cancel Edit</button>
-    </form>
 
-    <h2>All Transactions</h2>
-    <ul>
-      <li v-for="transaction in transactions" :key="transaction.id">
-        {{ (transaction.asset && transaction.asset.name) || transaction.asset_name }} - {{ transaction.date }} - {{ transaction.type }} - {{ transaction.price }}
-        <button @click="editTransaction(transaction)">Edit</button>
-        <button @click="deleteTransaction(transaction.id)">Delete</button>
-      </li>
-    </ul>
+    <div class="table-container">
+      <h2>All Transactions</h2>
+      <table class="transactions-table">
+        <thead>
+          <tr>
+            <th>Asset Name</th>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Price</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="transaction in transactions" :key="transaction.id">
+            <td>{{ (transaction.asset && transaction.asset.name) || transaction.asset_name }}</td>
+            <td>{{ transaction.date }}</td>
+            <td>{{ transaction.type }}</td>
+            <td>{{ transaction.price }}</td>
+            <td>
+              <button @click="editTransaction(transaction)" class="edit-button">Edit</button>
+              <button @click="deleteTransaction(transaction.id)" class="delete-button">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <button class="add-button" @click="openAddTransactionModal">+</button>
+
+    <TransactionModal
+      :is-visible="isModalVisible"
+      :transaction-data="editingTransaction"
+      @close="closeModal"
+      @save-transaction="handleSaveTransaction"
+    />
   </div>
 </template>
 
 <script>
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted } from 'vue';
+import TransactionModal from './TransactionModal.vue';
 
 export default {
   name: 'Transactions',
+  components: {
+    TransactionModal
+  },
   setup() {
     const transactions = ref([]);
-    const transactionForm = reactive({
-      asset_name: '',
-      date: '',
-      type: 'Buy',
-      price: 0
-    });
-    const editingTransactionId = ref(null);
+    const isModalVisible = ref(false);
+    const editingTransaction = ref(null);
 
     const fetchTransactions = async () => {
       try {
@@ -61,16 +63,31 @@ export default {
       }
     };
 
-    const submitTransaction = async () => {
+    const openAddTransactionModal = () => {
+      editingTransaction.value = null;
+      isModalVisible.value = true;
+    };
+
+    const editTransaction = (transaction) => {
+      editingTransaction.value = transaction;
+      isModalVisible.value = true;
+    };
+
+    const closeModal = () => {
+      editingTransaction.value = null; // Reset editing transaction before closing modal
+      isModalVisible.value = false;
+    };
+
+    const handleSaveTransaction = async (transactionData) => {
       try {
         let response;
-        if (editingTransactionId.value) {
-          response = await fetch(`http://localhost:8000/transactions/${editingTransactionId.value}`, {
+        if (transactionData.id) {
+          response = await fetch(`http://localhost:8000/transactions/${transactionData.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(transactionForm)
+            body: JSON.stringify(transactionData)
           });
         } else {
           response = await fetch('http://localhost:8000/transactions', {
@@ -78,12 +95,11 @@ export default {
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(transactionForm)
+            body: JSON.stringify(transactionData)
           });
         }
-        
+
         if (response.ok) {
-          resetForm();
           fetchTransactions();
         } else {
           console.error("Failed to submit transaction:", response.statusText);
@@ -91,14 +107,6 @@ export default {
       } catch (error) {
         console.error("Error submitting transaction:", error);
       }
-    };
-
-    const editTransaction = (transaction) => {
-      editingTransactionId.value = transaction.id;
-      transactionForm.asset_name = transaction.asset.name; // Assuming asset is nested
-      transactionForm.date = transaction.date; // Assuming date is in YYYY-MM-DD format
-      transactionForm.type = transaction.type;
-      transactionForm.price = transaction.price;
     };
 
     const deleteTransaction = async (id) => {
@@ -116,31 +124,109 @@ export default {
       }
     };
 
-    const cancelEdit = () => {
-      resetForm();
-    };
-
-    const resetForm = () => {
-      editingTransactionId.value = null;
-      transactionForm.asset_name = '';
-      transactionForm.date = '';
-      transactionForm.type = 'Buy';
-      transactionForm.price = 0;
-    };
-
     onMounted(() => {
       fetchTransactions();
     });
 
     return {
       transactions,
-      transactionForm,
-      editingTransactionId,
-      submitTransaction,
+      isModalVisible,
+      editingTransaction,
+      openAddTransactionModal,
       editTransaction,
+      closeModal,
+      handleSaveTransaction,
       deleteTransaction,
-      cancelEdit
     };
-  }
-}
+  },
+};
 </script>
+
+<style scoped>
+.transactions-container {
+  position: relative;
+  padding: 20px;
+  background-color: #F2F2F2;
+  color: #174D38;
+}
+
+h1 {
+  color: #4D1717;
+  margin-bottom: 20px;
+}
+
+.table-container {
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  color: #174D38;
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.transactions-table th,
+.transactions-table td {
+  border: 1px solid #CBCBCB;
+  padding: 10px;
+  text-align: left;
+}
+
+.transactions-table th {
+  background-color: #CBCBCB;
+  font-weight: bold;
+  color: #174D38;
+}
+
+.transactions-table tr:nth-child(even) {
+  background-color: #F2F2F2;
+}
+
+.edit-button,
+.delete-button {
+  padding: 5px 10px;
+  margin-right: 5px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.edit-button {
+  background-color: #174D38;
+  color: white;
+}
+
+.delete-button {
+  background-color: #4D1717;
+  color: white;
+}
+
+.add-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  background-color: #174D38;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 999;
+}
+</style>

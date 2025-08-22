@@ -1,23 +1,25 @@
 <template>
-  <div>
+  <div class="settings-container">
     <h1>Settings</h1>
     <p>Manage your Google Sheets API key here.</p>
-    <form @submit.prevent="saveApiKey">
-      <div>
+    <form @submit.prevent="saveApiKey" class="settings-form">
+      <div class="form-group">
         <label for="apiKey">Google Sheets API Key:</label>
         <input type="text" id="apiKey" v-model="apiKey" required />
       </div>
-      <button type="submit">Save API Key</button>
+      <button type="submit" class="save-button">Save API Key</button>
     </form>
 
     <h2>Google Sheets Integration (Stub)</h2>
-    <div>
-      <label for="spreadsheetId">Spreadsheet ID:</label>
-      <input type="text" id="spreadsheetId" v-model="spreadsheetId" />
-      <button @click="readFromSheets">Read Transactions from Sheets (Stub)</button>
-      <button @click="writeToSheets">Write Dummy Transaction to Sheets (Stub)</button>
+    <div class="sheets-integration">
+      <div class="form-group">
+        <label for="spreadsheetId">Spreadsheet ID:</label>
+        <input type="text" id="spreadsheetId" v-model="spreadsheetId" />
+      </div>
+      <button @click="readFromSheets" class="read-button">Read Transactions from Sheets (Stub)</button>
+      <button @click="writeToSheets" class="write-button">Write Dummy Transaction to Sheets (Stub)</button>
     </div>
-    <p v-if="sheetsMessage">{{ sheetsMessage }}</p>
+    <p v-if="sheetsMessage" class="sheets-message">{{ sheetsMessage }}</p>
   </div>
 </template>
 
@@ -104,3 +106,79 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.settings-container {
+  padding: 20px;
+  background-color: #F2F2F2;
+  color: #174D38;
+}
+
+h1 {
+  color: #4D1717;
+  margin-bottom: 20px;
+}
+
+p {
+  color: #174D38;
+}
+
+h2 {
+  color: #174D38;
+  margin-top: 30px;
+  margin-bottom: 15px;
+}
+
+.settings-form, .sheets-integration {
+  background-color: #FFFFFF;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #174D38;
+}
+
+input[type="text"] {
+  width: calc(100% - 22px);
+  padding: 10px;
+  border: 1px solid #CBCBCB;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-right: 10px;
+}
+
+.save-button,
+.read-button {
+  background-color: #174D38;
+  color: white;
+}
+
+.write-button {
+  background-color: #CBCBCB;
+  color: #174D38;
+}
+
+.sheets-message {
+  margin-top: 15px;
+  font-style: italic;
+  color: #4D1717;
+}
+</style>

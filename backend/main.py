@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Depends, HTTPException, status, APIRouter
+from fastapi import FastAPI, Depends, HTTPException, status, APIRouter, Body
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
 from typing import List
-from datetime import date
+from datetime import date, timedelta
 
 from . import crud, models, schemas, google_sheets
 from .database import SessionLocal, engine
@@ -41,11 +41,11 @@ def get_current_user_id(db: Session = Depends(get_db)) -> int:
 
 @app.post("/auth/set-key")
 def set_google_sheets_api_key(
-    api_key: str,
+    api_key_data: schemas.GoogleSheetsApiKey,
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
-    user = crud.update_user_api_key(db, user_id, api_key)
+    user = crud.update_user_api_key(db, user_id, api_key_data.api_key)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": "Google Sheets API key updated successfully"}
@@ -138,7 +138,16 @@ def get_portfolio_summary(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
-    # Get all transactions for the user's portfolios
+    # Calculate start date based on the period
+    today = date.today()
+    start_date = None
+    if period == "day":
+        start_date = today - timedelta(days=1)
+    elif period == "month":
+        start_date = today - timedelta(days=30)
+    elif period == "year":
+        start_date = today - timedelta(days=365)
+    
     user_portfolios = crud.get_portfolios(db, user_id)
     if not user_portfolios:
         return {
@@ -150,7 +159,10 @@ def get_portfolio_summary(
 
     all_transactions = []
     for portfolio in user_portfolios:
-        transactions_for_portfolio = db.query(models.Transaction).options(joinedload(models.Transaction.asset)).filter(models.Transaction.portfolio_id == portfolio.id).all()
+        query = db.query(models.Transaction).options(joinedload(models.Transaction.asset)).filter(models.Transaction.portfolio_id == portfolio.id)
+        if start_date:
+            query = query.filter(models.Transaction.date >= start_date)
+        transactions_for_portfolio = query.all()
         all_transactions.extend(transactions_for_portfolio)
 
     if not all_transactions:
@@ -171,17 +183,21 @@ def get_portfolio_summary(
         elif transaction.type == "Sell":
             current_total += transaction.price # Inflow
     
-    # For simplicity, current_total will be the net of buys and sells.
-    # In a real app, this would consider current asset values.
-
     rate_of_return = 0.0
     if initial_investment > 0:
-        rate_of_return = (current_total / initial_investment) # This is a simplified calculation
+        # The current_total here represents the net change based on buy/sell prices.
+        # To calculate rate of return, we should consider the *profit/loss* relative to the *initial investment*.
+        # Simplified: (current_value - initial_investment) / initial_investment
+        # For now, let's assume current_total is the 'current_value' minus the initial_investment for simplicity in this stub.
+        # This needs more robust logic for actual portfolio performance.
+        # If current_total is the net of buys and sells, then the 'profit' is `current_total`.
+        profit = current_total # If positive, it's profit, if negative, it's loss
+        rate_of_return = (profit / initial_investment) * 100
 
     return {
         "period": period,
         "current_total": round(current_total, 2),
-        "rate_of_return": round(rate_of_return * 100, 2), # As percentage
+        "rate_of_return": round(rate_of_return, 2), # As percentage
         "message": "Portfolio summary calculated."
     }
 
