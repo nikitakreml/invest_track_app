@@ -116,6 +116,53 @@ def get_asset_price_by_date(asset_ticker: str, target_date: date, token: str) ->
         print(f"An unexpected error occurred: {e}")
         return None
 
+def get_current_asset_price(asset_ticker: str, token: str) -> float | None:
+    """Fetches the current market price of an asset."""
+    try:
+        with Client(token) as client:
+            instruments_response = client.instruments.find_instrument(query=asset_ticker)
+
+            if not instruments_response.instruments:
+                print(f"Asset with ticker {asset_ticker} not found.")
+                return None
+
+            # Prioritize shares with api_trade_available_flag=True
+            instrument = None
+            for inst in instruments_response.instruments:
+                if inst.instrument_type == 'share' and inst.api_trade_available_flag:
+                    instrument = inst
+                    break
+            
+            # If no share found, look for any instrument with api_trade_available_flag=True
+            if instrument is None:
+                for inst in instruments_response.instruments:
+                    if inst.api_trade_available_flag:
+                        instrument = inst
+                        break
+
+            if instrument is None:
+                print(f"Warning: No API tradable instrument found for {asset_ticker}. Cannot get current price. Token: {token}")
+                return None
+
+            figi = instrument.figi
+            last_prices_response = client.market_data.get_last_prices(figi=[figi])
+
+            if last_prices_response.last_prices:
+                last_price = last_prices_response.last_prices[0]
+                price = quotation_to_float(last_price.price)
+                print(f"Retrieved current price for {asset_ticker}: {price}")
+                return price
+            else:
+                print(f"No current price found for {asset_ticker}.")
+                return None
+
+    except RequestError as e:
+        print(f"Tinkoff Invest API error: {e.code.value} - {e.details}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred while fetching current price: {e}")
+        return None
+
 # Example Usage (for testing purposes, remove in production)
 # if __name__ == "__main__":
 #     # Replace with your actual Tinkoff Invest API token and asset ticker

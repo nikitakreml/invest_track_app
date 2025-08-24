@@ -4,29 +4,31 @@
 
     <div class="table-container">
       <h2>All Transactions</h2>
-      <table class="transactions-table">
-        <thead>
-          <tr>
-            <th>Asset Name</th>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Price</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="transaction in transactions" :key="transaction.id">
-            <td>{{ (transaction.asset && transaction.asset.name) || transaction.asset_name }}</td>
-            <td>{{ transaction.date }}</td>
-            <td>{{ transaction.type }}</td>
-            <td>{{ transaction.price }}</td>
-            <td class="actions-cell">
-              <button @click="editTransaction(transaction)" class="edit-button">Edit</button>
-              <button @click="deleteTransaction(transaction.id)" class="delete-button">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-scroll-wrapper">
+        <table class="transactions-table">
+          <thead>
+            <tr>
+              <th>Asset Name</th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Price</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="transaction in transactions" :key="transaction.id">
+              <td>{{ (transaction.asset && transaction.asset.name) || transaction.asset_name }}</td>
+              <td>{{ transaction.date }}</td>
+              <td>{{ transaction.type }}</td>
+              <td>{{ transaction.price }}</td>
+              <td class="actions-cell">
+                <button @click="editTransaction(transaction)" class="edit-button">Edit</button>
+                <button @click="deleteTransaction(transaction.id)" class="delete-button">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <button class="add-button" @click="openAddTransactionModal">+</button>
@@ -148,13 +150,13 @@ export default {
   padding: 40px;
   background-color: var(--primary-background);
   color: var(--text-color-light);
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - var(--nav-height, 100px));
 }
 
 h1 {
   color: var(--text-color-dark);
   margin-bottom: 25px;
-  font-size: 2.8rem;
+  /* font-size: 2.8rem; Let global clamp() handle this */
   font-weight: 800;
   letter-spacing: -0.03em;
 }
@@ -174,13 +176,19 @@ h2 {
   color: var(--text-color-dark);
   margin-top: 0;
   margin-bottom: 25px;
-  font-size: 1.8rem;
+  /* font-size: 1.8rem; Let global clamp() handle this */
   font-weight: 700;
   text-align: center;
 }
 
+.table-scroll-wrapper {
+  overflow-x: auto; /* Enable horizontal scrolling for tables on small screens */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
 .transactions-table {
   width: 100%;
+  min-width: 600px; /* Ensure table has a minimum width for scrolling */
   border-collapse: separate;
   border-spacing: 0;
   margin-top: 20px;
@@ -190,12 +198,12 @@ h2 {
 .transactions-table td {
   padding: 15px 18px;
   text-align: left;
-  border-bottom: 1px solid var(--color-dark-grey-blue); /* Darker border for table rows */
+  border-bottom: 1px solid var(--color-dark-grey-blue);
 }
 
 .transactions-table th {
   background-color: var(--color-dark-grey-blue);
-  color: var(--text-color-light); /* Light text for headers */
+  color: var(--text-color-light);
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.95rem;
@@ -215,11 +223,11 @@ h2 {
 }
 
 .transactions-table tbody tr:hover {
-  background-color: var(--color-deep-blue); /* Subtle hover effect on dark */
+  background-color: var(--color-deep-blue);
 }
 
 .transactions-table td {
-  color: var(--text-color-light); /* Light text for table data */
+  color: var(--text-color-light);
 }
 
 .actions-cell {
@@ -278,7 +286,6 @@ h2 {
   box-shadow: 0 8px 25px rgba(var(--color-darkest-rgb), 0.4);
   z-index: 999;
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-  /* Removed pointer-events: auto; as it was for debugging */
 }
 
 .add-button:hover {
@@ -286,10 +293,85 @@ h2 {
   box-shadow: 0 12px 30px rgba(var(--accent-color-rgb), 0.5);
 }
 
-/* Removed temporary modal-overlay style */
-
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .transactions-container {
+    padding: 20px;
+  }
+
+  .table-container {
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 95%; /* Make table container more fluid */
+  }
+
+  .transactions-table th,
+  .transactions-table td {
+    padding: 10px 12px; /* Reduce padding for tighter table */
+    font-size: 0.85rem; /* Smaller font size for table content */
+  }
+
+  .actions-cell button {
+    padding: 6px 10px; /* Smaller action buttons */
+    font-size: 0.8rem;
+    margin-right: 5px;
+  }
+
+  .add-button {
+    bottom: 20px; /* Adjust FAB position for mobile */
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    font-size: 1.8rem;
+    box-shadow: 0 4px 15px rgba(var(--color-darkest-rgb), 0.3);
+  }
+
+  .add-button:hover {
+    transform: translateY(-3px) rotate(135deg) scale(1.02);
+    box-shadow: 0 6px 20px rgba(var(--accent-color-rgb), 0.4);
+  }
+}
+
+@media (max-width: 480px) {
+  .transactions-container {
+    padding: 15px;
+  }
+
+  .table-container {
+    padding: 15px;
+    margin: 15px auto;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 2.8rem); /* Fluid font size for h1 on very small screens */
+  }
+
+  h2 {
+    font-size: clamp(1.4rem, 4vw, 1.8rem); /* Fluid font size for h2 on very small screens */
+  }
+
+  .transactions-table th,
+  .transactions-table td {
+    padding: 8px 10px; /* Even tighter table cells */
+    font-size: 0.8rem;
+  }
+
+  .actions-cell button {
+    padding: 5px 8px;
+    font-size: 0.75rem;
+  }
+
+  .add-button {
+    bottom: 15px;
+    right: 15px;
+    width: 45px;
+    height: 45px;
+    font-size: 1.6rem;
+  }
 }
 </style>

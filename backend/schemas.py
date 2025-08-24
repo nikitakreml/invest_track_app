@@ -29,6 +29,7 @@ class User(UserBase):
     google_sheets_spreadsheet_id: Optional[str] = None
     tinkoff_invest_api_token: Optional[str] = None
     auto_transaction_price_enabled: bool = True
+    balance: float # Add balance to the User schema
 
     class Config:
         from_attributes = True
@@ -38,6 +39,7 @@ class UserSettings(BaseModel):
     google_sheets_spreadsheet_id: Optional[str] = None
     tinkoff_invest_api_token: Optional[str] = None
     auto_transaction_price_enabled: Optional[bool] = None
+    balance: Optional[float] = None # Allow balance to be updated via settings
 
 class AssetBase(BaseModel):
     name: str
@@ -73,3 +75,6 @@ class Transaction(TransactionBase):
 
 class GoogleSheetsApiKey(BaseModel):
     api_key: str
+
+class TopUpWithdrawRequest(BaseModel):
+    amount: float # Schema for top-up/withdraw requests

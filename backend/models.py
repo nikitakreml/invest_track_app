@@ -13,6 +13,7 @@ class User(Base):
     google_sheets_spreadsheet_id = Column(String, nullable=True)
     tinkoff_invest_api_token = Column(String, nullable=True)
     auto_transaction_price_enabled = Column(Boolean, default=True)
+    balance = Column(Float, default=0.0) # New field for user's account balance
 
     portfolios = relationship("Portfolio", back_populates="owner")
 

@@ -143,20 +143,20 @@ export default {
   padding: 40px;
   background-color: var(--primary-background);
   color: var(--text-color-light);
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - var(--nav-height, 100px));
 }
 
 h1 {
   color: var(--text-color-dark);
   margin-bottom: 25px;
-  font-size: 2.8rem;
+  /* font-size: 2.8rem; Let global clamp() handle this */
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 
 p {
   color: var(--text-color-light);
-  font-size: 1.1rem;
+  /* font-size: 1.1rem; Let global clamp() handle this */
   margin-bottom: 20px;
 }
 
@@ -164,7 +164,7 @@ h2 {
   color: var(--text-color-dark);
   margin-top: 40px;
   margin-bottom: 20px;
-  font-size: 1.8rem;
+  /* font-size: 1.8rem; Let global clamp() handle this */
   font-weight: 700;
 }
 
@@ -188,7 +188,7 @@ h2 {
   align-items: center;
   margin-bottom: 20px;
   padding: 10px;
-  background-color: var(--color-darkest); /* Darker background for checkbox group */
+  background-color: var(--color-darkest);
   border-radius: 8px;
   border: 1px solid var(--color-dark-grey-blue);
   box-shadow: inset 0 1px 3px rgba(var(--color-darkest-rgb), 0.3);
@@ -199,7 +199,7 @@ h2 {
   height: 20px;
   margin-right: 15px;
   transform: scale(1);
-  accent-color: var(--accent-color); /* Style checkbox itself */
+  accent-color: var(--accent-color);
   cursor: pointer;
   transition: transform 0.2s ease;
 }
@@ -211,7 +211,7 @@ h2 {
 .checkbox-group label {
   margin-bottom: 0;
   font-size: 1rem;
-  color: var(--text-color-dark); /* Label white */
+  color: var(--text-color-dark);
   font-weight: 500;
 }
 
@@ -249,5 +249,86 @@ button {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 20px;
+  }
+
+  .settings-form, .sheets-integration {
+    padding: 25px;
+    margin: 25px auto;
+    max-width: 95%;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 2.8rem);
+  }
+
+  h2 {
+    font-size: clamp(1.4rem, 4vw, 1.8rem);
+    margin-top: 30px;
+  }
+
+  p {
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+  }
+
+  .checkbox-group {
+    padding: 8px;
+  }
+
+  .checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+  }
+
+  .checkbox-group label {
+    font-size: 0.9rem;
+  }
+
+  .save-button, .read-button, .write-button {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-container {
+    padding: 15px;
+  }
+
+  .settings-form, .sheets-integration {
+    padding: 20px;
+    margin: 20px auto;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+  .checkbox-group {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 15px;
+  }
+
+  .checkbox-group input[type="checkbox"] {
+    margin-bottom: 5px;
+  }
+
+  .checkbox-group label {
+    text-align: left;
+    width: 100%;
+  }
+
+  .modal-content button {
+    width: 100%;
+    margin-top: 10px;
+    margin-right: 0;
+  }
 }
 </style>

@@ -262,4 +262,74 @@ export default {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(var(--color-deep-blue-rgb), 0.4);
 }
+
+/* Responsive adjustments for TransactionModal */
+@media (max-width: 768px) {
+  .modal-content {
+    min-width: auto; /* Remove fixed min-width */
+    max-width: 95%; /* More fluid width */
+    padding: 25px;
+  }
+
+  .modal-content h2 {
+    font-size: clamp(1.5rem, 4.5vw, 1.8rem);
+    margin-bottom: 20px;
+  }
+
+  .modal-content label {
+    font-size: 0.9rem;
+  }
+
+  .modal-content input[type="text"],
+  .modal-content input[type="date"],
+  .modal-content input[type="number"],
+  .modal-content select {
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+
+  .modal-actions {
+    flex-direction: column; /* Stack buttons vertically */
+    gap: 10px;
+    margin-top: 25px;
+  }
+
+  .modal-content button {
+    width: 100%; /* Full width buttons */
+    padding: 12px 20px;
+    font-size: 0.95rem;
+  }
+
+  .estimate-price-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 20px;
+    margin: 10px; /* Add some margin from edges */
+  }
+
+  .modal-content h2 {
+    font-size: clamp(1.3rem, 4vw, 1.5rem);
+    margin-bottom: 15px;
+  }
+
+  .modal-content label {
+    font-size: 0.85rem;
+  }
+
+  .modal-content input[type="text"],
+  .modal-content input[type="date"],
+  .modal-content input[type="number"],
+  .modal-content select {
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+
+  .modal-actions {
+    margin-top: 20px;
+  }
+}
 </style>

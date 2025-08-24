@@ -6,7 +6,7 @@ from datetime import date, timedelta
 
 from . import crud, models, schemas, google_sheets
 from .database import SessionLocal, engine
-from .tinkoff_invest import get_asset_price_by_date # Import the new function
+from .tinkoff_invest import get_asset_price_by_date, get_current_asset_price # Import the new function
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -52,7 +52,8 @@ def get_user_settings(
         google_sheets_api_key=user.google_sheets_api_key,
         google_sheets_spreadsheet_id=user.google_sheets_spreadsheet_id,
         tinkoff_invest_api_token=user.tinkoff_invest_api_token,
-        auto_transaction_price_enabled=user.auto_transaction_price_enabled
+        auto_transaction_price_enabled=user.auto_transaction_price_enabled,
+        balance=user.balance # Include balance in settings
     )
 
 @app.put("/users/me/settings", response_model=schemas.UserSettings)
@@ -68,9 +69,35 @@ def update_user_settings_endpoint(
         google_sheets_api_key=user.google_sheets_api_key,
         google_sheets_spreadsheet_id=user.google_sheets_spreadsheet_id,
         tinkoff_invest_api_token=user.tinkoff_invest_api_token,
-        auto_transaction_price_enabled=user.auto_transaction_price_enabled
+        auto_transaction_price_enabled=user.auto_transaction_price_enabled,
+        balance=user.balance # Include balance in settings
     )
 
+@app.post("/users/me/top-up", response_model=schemas.User)
+def top_up_account(
+    request: schemas.TopUpWithdrawRequest,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    if request.amount <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Amount must be positive")
+    user = crud.update_user_balance(db, user_id, request.amount)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@app.post("/users/me/withdraw", response_model=schemas.User)
+def withdraw_from_account(
+    request: schemas.TopUpWithdrawRequest,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    if request.amount <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Amount must be positive")
+    user = crud.update_user_balance(db, user_id, -request.amount) # Subtract amount for withdrawal
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 @app.get("/transactions", response_model=List[schemas.Transaction])
 def read_transactions(
@@ -106,6 +133,13 @@ def create_transaction(
         asset_id=db_asset.id,
         portfolio_id=db_portfolio.id
     )
+
+    # Adjust user balance based on transaction type
+    if new_transaction.type == "Buy":
+        crud.update_user_balance(db, user_id, -new_transaction.price) # Debit for buy
+    elif new_transaction.type == "Sell":
+        crud.update_user_balance(db, user_id, new_transaction.price) # Credit for sell
+
     db.refresh(new_transaction)
     return new_transaction
 
@@ -117,6 +151,14 @@ def update_transaction(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
+    # Fetch old transaction to reverse its effect on balance
+    old_transaction = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
+    if old_transaction:
+        if old_transaction.type == "Buy":
+            crud.update_user_balance(db, user_id, old_transaction.price) # Credit back old buy amount
+        elif old_transaction.type == "Sell":
+            crud.update_user_balance(db, user_id, -old_transaction.price) # Debit back old sell amount
+
     db_asset = crud.get_asset_by_ticker(db, transaction.asset_name)
     if not db_asset:
         db_asset = crud.create_asset(db, schemas.AssetCreate(name=transaction.asset_name, ticker=transaction.asset_name))
@@ -138,6 +180,13 @@ def update_transaction(
     )
     if not updated_transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    # Apply new transaction's effect on balance
+    if updated_transaction.type == "Buy":
+        crud.update_user_balance(db, user_id, -updated_transaction.price) # Debit for new buy
+    elif updated_transaction.type == "Sell":
+        crud.update_user_balance(db, user_id, updated_transaction.price) # Credit for new sell
+
     db.refresh(updated_transaction)
     return updated_transaction
 
@@ -150,6 +199,13 @@ def delete_transaction(
     db_transaction = crud.delete_transaction(db, transaction_id)
     if not db_transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    # Revert balance change for the deleted transaction
+    user_id = get_current_user_id(db) # Get user_id again as it's not passed directly
+    if db_transaction.type == "Buy":
+        crud.update_user_balance(db, user_id, db_transaction.price) # Credit back for deleted buy
+    elif db_transaction.type == "Sell":
+        crud.update_user_balance(db, user_id, -db_transaction.price) # Debit back for deleted sell
+
     return {"message": "Transaction deleted"}
 
 
@@ -221,6 +277,61 @@ def get_portfolio_summary(
         "rate_of_return": round(rate_of_return, 2), # As percentage
         "message": "Portfolio summary calculated."
     }
+
+
+@app.get("/portfolio/composition")
+def get_portfolio_composition(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    user = crud.get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not user.tinkoff_invest_api_token:
+        return {"composition": [], "total_portfolio_value": user.balance, "message": "Tinkoff Invest API token not set. Cannot fetch live asset prices."}
+
+    user_portfolios = crud.get_portfolios(db, user_id)
+    if not user_portfolios:
+        return {"composition": [{"name": "Cash (Balance)", "value": round(user.balance, 2)}], "total_portfolio_value": user.balance, "message": "No portfolios found. Displaying only cash balance."}
+
+    # For simplicity, assume one default portfolio for now
+    default_portfolio = user_portfolios[0]
+    
+    # Calculate current holdings of each asset
+    asset_holdings = {}
+    transactions = db.query(models.Transaction).options(joinedload(models.Transaction.asset)).filter(models.Transaction.portfolio_id == default_portfolio.id).all()
+
+    for transaction in transactions:
+        ticker = transaction.asset.ticker
+        if ticker not in asset_holdings:
+            asset_holdings[ticker] = {"name": transaction.asset.name, "quantity": 0.0, "value": 0.0}
+        
+        if transaction.type == "Buy":
+            asset_holdings[ticker]["quantity"] += 1 # Assuming 1 unit per transaction for simplicity
+        elif transaction.type == "Sell":
+            asset_holdings[ticker]["quantity"] -= 1
+
+    composition_data = []
+    total_portfolio_value = user.balance
+
+    # Add cash balance to composition
+    composition_data.append(["Cash (Balance)", round(user.balance, 2)])
+
+    # Calculate current value of each asset holding
+    for ticker, data in asset_holdings.items():
+        if data["quantity"] > 0:
+            current_price = get_current_asset_price(ticker, user.tinkoff_invest_api_token)
+            if current_price is not None and data["name"] is not None:
+                asset_value = data["quantity"] * current_price
+                composition_data.append([data["name"], round(asset_value, 2)])
+                total_portfolio_value += asset_value
+            elif data["name"] is not None: # Asset held, but price unavailable
+                composition_data.append([f"{data['name']} (Price Unavailable)", 0.0]) # Still show asset, but with 0 value
+            else: # Fallback if asset name is also None
+                composition_data.append([f"{ticker} (Name/Price Unavailable)", 0.0])
+
+    return {"composition": composition_data, "total_portfolio_value": round(total_portfolio_value, 2), "message": "Portfolio composition calculated."}
 
 
 @app.get("/asset/estimate-price")

@@ -10,7 +10,7 @@ def get_user_by_email(db: Session, email: str):
 
 def create_user(db: Session, user: schemas.UserCreate):
     hashed_password = user.password # In a real app, hash this password
-    db_user = models.User(email=user.email, hashed_password=hashed_password)
+    db_user = models.User(email=user.email, hashed_password=hashed_password, balance=0.0) # Initialize balance
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -22,6 +22,14 @@ def update_user_settings(db: Session, user_id: int, settings: schemas.UserSettin
         update_data = settings.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_user, key, value)
+        db.commit()
+        db.refresh(db_user)
+    return db_user
+
+def update_user_balance(db: Session, user_id: int, amount: float):
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_user:
+        db_user.balance += amount
         db.commit()
         db.refresh(db_user)
     return db_user

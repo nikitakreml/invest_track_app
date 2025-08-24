@@ -25,36 +25,37 @@ body {
   box-sizing: border-box;
   font-family: 'Roboto', sans-serif;
   line-height: 1.6;
-  background-color: var(--primary-background); /* Primary background now dark */
-  color: var(--text-color-light); /* Default text color now light */
+  background-color: var(--primary-background);
+  color: var(--text-color-light);
+  -webkit-text-size-adjust: 100%; /* Prevent text zoom on iOS */
 }
 
 :root {
-  --color-darkest: #141619; /* Almost black */
-  --color-dark-grey-blue: #2C2E3A; /* Darker grey-blue for secondary elements */
-  --color-deep-blue: #050A44; /* Dark blue, can be used for deep accents or specific backgrounds */
-  --color-vibrant-blue: #0A21C0; /* Bright blue for interactive elements */
-  --color-light-grey-blue: #B3B4BD; /* Lighter grey-blue for subtle text/borders */
+  --color-darkest: #141619;
+  --color-dark-grey-blue: #2C2E3A;
+  --color-deep-blue: #050A44;
+  --color-vibrant-blue: #0A21C0;
+  --color-light-grey-blue: #B3B4BD;
 
   /* RGB versions for rgba() usage */
   --color-darkest-rgb: 20, 22, 25;
   --accent-color-rgb: 10, 33, 192;
 
-  --primary-background: var(--color-darkest); /* Main background */
-  --secondary-background: var(--color-dark-grey-blue); /* For cards, panels */
-  --text-color-dark: #FFFFFF; /* Main text color on dark background */
-  --text-color-light: var(--color-light-grey-blue); /* Secondary text, subtle elements */
+  --primary-background: var(--color-darkest);
+  --secondary-background: var(--color-dark-grey-blue);
+  --text-color-dark: #FFFFFF;
+  --text-color-light: var(--color-light-grey-blue);
   --accent-color: var(--color-vibrant-blue);
-  --danger-color: #E53935; /* Brighter red for danger, contrasting with dark */
+  --danger-color: #E53935;
 }
 
 #app {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: var(--text-color-dark); /* Ensure app text is visible */
+  color: var(--text-color-dark);
   min-height: 100vh;
-  background-color: var(--primary-background); /* Ensure app background matches body */
+  background-color: var(--primary-background);
 }
 
 nav {
@@ -68,15 +69,17 @@ nav {
   top: 0;
   width: 100%;
   z-index: 1000;
+  flex-wrap: wrap; /* Allow nav items to wrap on smaller screens */
 }
 
 nav a {
   font-weight: bold;
-  color: var(--text-color-light); /* Nav links are now light on dark background */
+  color: var(--text-color-light);
   margin: 0 20px;
   text-decoration: none;
   transition: color 0.3s ease, transform 0.2s ease;
   font-size: 1.1rem;
+  padding: 5px 0; /* Add padding for easier touch on mobile */
 }
 
 nav a.router-link-exact-active {
@@ -100,8 +103,8 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border: none;
-  background-color: var(--accent-color); /* Default buttons are vibrant blue */
-  color: var(--text-color-dark); /* White text on vibrant blue */
+  background-color: var(--accent-color);
+  color: var(--text-color-dark);
 }
 
 button:hover {
@@ -129,7 +132,7 @@ label {
   display: block;
   margin-bottom: 8px;
   font-weight: bold;
-  color: var(--text-color-dark); /* Labels are light on dark background */
+  color: var(--text-color-dark);
   font-size: 0.95rem;
 }
 
@@ -139,11 +142,11 @@ input[type="number"],
 select {
   width: calc(100% - 22px);
   padding: 12px;
-  border: 1px solid var(--color-dark-grey-blue); /* Darker border for inputs */
+  border: 1px solid var(--color-dark-grey-blue);
   border-radius: 6px;
   font-size: 1rem;
-  background-color: var(--color-darkest); /* Inputs are dark */
-  color: var(--text-color-dark); /* Light text in dark inputs */
+  background-color: var(--color-darkest);
+  color: var(--text-color-dark);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -158,4 +161,42 @@ input:focus, select:focus {
   padding-top: 100px; /* Offset for fixed navigation bar */
 }
 
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  nav {
+    flex-direction: column; /* Stack nav items vertically */
+    padding: 10px 15px; /* Adjust padding for smaller screens */
+  }
+
+  nav a {
+    margin: 5px 0; /* Adjust vertical margin for stacked links */
+    font-size: 1rem;
+  }
+
+  .router-view-content {
+    padding-top: 130px; /* Adjust padding for stacked nav */
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 2.8rem); /* Fluid font size for h1 */
+  }
+
+  p {
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem); /* Fluid font size for paragraphs */
+  }
+}
+
+@media (max-width: 480px) {
+  .router-view-content {
+    padding-top: 150px; /* Further adjust for very small screens */
+  }
+
+  nav {
+    padding: 10px 10px; /* Smaller padding for very small screens */
+  }
+
+  nav a {
+    font-size: 0.9rem;
+  }
+}
 </style>
