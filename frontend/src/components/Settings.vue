@@ -1,61 +1,87 @@
 <template>
   <div class="settings-container">
     <h1>Settings</h1>
-    <p>Manage your Google Sheets API key here.</p>
-    <form @submit.prevent="saveApiKey" class="settings-form">
+    <p>Manage your application settings here.</p>
+    <form @submit.prevent="saveSettings" class="settings-form">
       <div class="form-group">
-        <label for="apiKey">Google Sheets API Key:</label>
-        <input type="text" id="apiKey" v-model="apiKey" required />
+        <label for="googleSheetsApiKey">Google Sheets API Key:</label>
+        <input type="text" id="googleSheetsApiKey" v-model="settings.google_sheets_api_key" />
       </div>
-      <button type="submit" class="save-button">Save API Key</button>
+      <div class="form-group">
+        <label for="googleSheetsSpreadsheetId">Google Sheets Spreadsheet ID:</label>
+        <input type="text" id="googleSheetsSpreadsheetId" v-model="settings.google_sheets_spreadsheet_id" />
+      </div>
+      <div class="form-group">
+        <label for="tinkoffInvestApiToken">Tinkoff Invest API Token:</label>
+        <input type="text" id="tinkoffInvestApiToken" v-model="settings.tinkoff_invest_api_token" />
+      </div>
+      <div class="form-group">
+        <input type="checkbox" id="autoTransactionPriceEnabled" v-model="settings.auto_transaction_price_enabled" />
+        <label for="autoTransactionPriceEnabled">Enable Auto Transaction Price</label>
+      </div>
+      <button type="submit" class="save-button">Save Settings</button>
     </form>
 
-    <h2>Google Sheets Integration (Stub)</h2>
+    <h2>Google Sheets Integration Actions (Stub)</h2>
     <div class="sheets-integration">
-      <div class="form-group">
-        <label for="spreadsheetId">Spreadsheet ID:</label>
-        <input type="text" id="spreadsheetId" v-model="spreadsheetId" />
-      </div>
-      <button @click="readFromSheets" class="read-button">Read Transactions from Sheets (Stub)</button>
-      <button @click="writeToSheets" class="write-button">Write Dummy Transaction to Sheets (Stub)</button>
+      <button @click="readFromSheets" class="read-button">Read Transactions from Sheets</button>
+      <button @click="writeToSheets" class="write-button">Write Dummy Transaction to Sheets</button>
     </div>
     <p v-if="sheetsMessage" class="sheets-message">{{ sheetsMessage }}</p>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, onMounted, reactive } from 'vue';
 
 export default {
   name: 'Settings',
   setup() {
-    const apiKey = ref('');
-    const spreadsheetId = ref('');
+    const settings = reactive({
+      google_sheets_api_key: '',
+      google_sheets_spreadsheet_id: '',
+      tinkoff_invest_api_token: '',
+      auto_transaction_price_enabled: true
+    });
     const sheetsMessage = ref('');
 
-    const saveApiKey = async () => {
+    const fetchSettings = async () => {
       try {
-        const response = await fetch('http://localhost:8000/auth/set-key', {
-          method: 'POST',
+        const response = await fetch('http://localhost:8000/users/me/settings');
+        if (response.ok) {
+          const data = await response.json();
+          Object.assign(settings, data);
+        } else {
+          console.error("Failed to fetch settings.");
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    };
+
+    const saveSettings = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/users/me/settings', {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ api_key: apiKey.value })
+          body: JSON.stringify(settings)
         });
         if (response.ok) {
-          alert("API Key saved successfully!");
+          alert("Settings saved successfully!");
         } else {
-          alert("Failed to save API Key.");
+          alert("Failed to save settings.");
         }
       } catch (error) {
-        console.error("Error saving API Key:", error);
+        console.error("Error saving settings:", error);
       }
     };
 
     const readFromSheets = async () => {
       try {
         sheetsMessage.value = 'Reading from sheets...';
-        const response = await fetch(`http://localhost:8000/google_sheets/read_transactions?spreadsheet_id=${spreadsheetId.value}`);
+        const response = await fetch(`http://localhost:8000/google_sheets/read_transactions`);
         const data = await response.json();
         if (response.ok) {
           sheetsMessage.value = `Read success! Transactions: ${JSON.stringify(data.transactions)}`;
@@ -77,7 +103,7 @@ export default {
           type: "Buy",
           price: 123.45
         };
-        const response = await fetch(`http://localhost:8000/google_sheets/write_transaction?spreadsheet_id=${spreadsheetId.value}`, {
+        const response = await fetch(`http://localhost:8000/google_sheets/write_transaction`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -87,7 +113,8 @@ export default {
         if (response.ok) {
           sheetsMessage.value = "Dummy transaction written to sheets (check console for stub output).";
         } else {
-          sheetsMessage.value = `Write failed: ${data.detail || response.statusText}`;
+          const errorData = await response.json();
+          sheetsMessage.value = `Write failed: ${errorData.detail || response.statusText}`;
         }
       } catch (error) {
         console.error("Error writing to sheets:", error);
@@ -95,11 +122,14 @@ export default {
       }
     };
 
+    onMounted(() => {
+      fetchSettings();
+    });
+
     return {
-      apiKey,
-      spreadsheetId,
+      settings,
       sheetsMessage,
-      saveApiKey,
+      saveSettings,
       readFromSheets,
       writeToSheets
     };

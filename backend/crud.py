@@ -5,11 +5,25 @@ from . import models, schemas
 def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
+def get_user_by_email(db: Session, email: str):
+    return db.query(models.User).filter(models.User.email == email).first()
+
 def create_user(db: Session, user: schemas.UserCreate):
-    db_user = models.User()
+    hashed_password = user.password # In a real app, hash this password
+    db_user = models.User(email=user.email, hashed_password=hashed_password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    return db_user
+
+def update_user_settings(db: Session, user_id: int, settings: schemas.UserSettings):
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_user:
+        update_data = settings.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_user, key, value)
+        db.commit()
+        db.refresh(db_user)
     return db_user
 
 def update_user_api_key(db: Session, user_id: int, api_key: str):

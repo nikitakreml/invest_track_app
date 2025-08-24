@@ -36,20 +36,40 @@ def get_db():
 def get_current_user_id(db: Session = Depends(get_db)) -> int:
     user = crud.get_user(db, user_id=1)
     if not user:
-        user = crud.create_user(db, schemas.UserCreate())
+        user = crud.create_user(db, schemas.UserCreate(email="test@example.com", password="testpassword"))
     return user.id
 
 
-@app.post("/auth/set-key")
-def set_google_sheets_api_key(
-    api_key_data: schemas.GoogleSheetsApiKey,
+@app.get("/users/me/settings", response_model=schemas.UserSettings)
+def get_user_settings(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
-    user = crud.update_user_api_key(db, user_id, api_key_data.api_key)
+    user = crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return {"message": "Google Sheets API key updated successfully"}
+    return schemas.UserSettings(
+        google_sheets_api_key=user.google_sheets_api_key,
+        google_sheets_spreadsheet_id=user.google_sheets_spreadsheet_id,
+        tinkoff_invest_api_token=user.tinkoff_invest_api_token,
+        auto_transaction_price_enabled=user.auto_transaction_price_enabled
+    )
+
+@app.put("/users/me/settings", response_model=schemas.UserSettings)
+def update_user_settings_endpoint(
+    settings: schemas.UserSettings,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    user = crud.update_user_settings(db, user_id, settings)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return schemas.UserSettings(
+        google_sheets_api_key=user.google_sheets_api_key,
+        google_sheets_spreadsheet_id=user.google_sheets_spreadsheet_id,
+        tinkoff_invest_api_token=user.tinkoff_invest_api_token,
+        auto_transaction_price_enabled=user.auto_transaction_price_enabled
+    )
 
 
 @app.get("/transactions", response_model=List[schemas.Transaction])
@@ -211,10 +231,10 @@ def estimate_asset_price(
     user_id: int = Depends(get_current_user_id)
 ):
     user = crud.get_user(db, user_id)
-    if not user or not user.google_sheets_api_key:
+    if not user or not user.tinkoff_invest_api_token:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tinkoff Invest API token not set for user")
     
-    price = get_asset_price_by_date(ticker, target_date, user.google_sheets_api_key)
+    price = get_asset_price_by_date(ticker, target_date, user.tinkoff_invest_api_token)
     
     if price is None:
         raise HTTPException(status_code=404, detail=f"Could not retrieve price for {ticker} on {target_date}.")
@@ -223,27 +243,25 @@ def estimate_asset_price(
 
 @app.get("/google_sheets/read_transactions")
 def read_sheets_transactions(
-    spreadsheet_id: str,
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
     user = crud.get_user(db, user_id)
-    if not user or not user.google_sheets_api_key:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google Sheets API key not set for user")
+    if not user or not user.google_sheets_api_key or not user.google_sheets_spreadsheet_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google Sheets API key or Spreadsheet ID not set for user")
     
-    transactions_from_sheets = google_sheets.read_transactions_from_sheets(user.google_sheets_api_key, spreadsheet_id)
+    transactions_from_sheets = google_sheets.read_transactions_from_sheets(user.google_sheets_api_key, user.google_sheets_spreadsheet_id)
     return {"transactions": transactions_from_sheets}
 
 @app.post("/google_sheets/write_transaction")
 def write_sheets_transaction(
-    spreadsheet_id: str,
     transaction_data: schemas.TransactionCreate,
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
     user = crud.get_user(db, user_id)
-    if not user or not user.google_sheets_api_key:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google Sheets API key not set for user")
+    if not user or not user.google_sheets_api_key or not user.google_sheets_spreadsheet_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google Sheets API key or Spreadsheet ID not set for user")
     
-    google_sheets.write_transaction_to_sheets(user.google_sheets_api_key, spreadsheet_id, transaction_data.model_dump())
+    google_sheets.write_transaction_to_sheets(user.google_sheets_api_key, user.google_sheets_spreadsheet_id, transaction_data.model_dump())
     return {"message": "Transaction written to Google Sheets (stub)"}

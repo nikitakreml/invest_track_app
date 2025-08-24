@@ -20,7 +20,8 @@
         </div>
         <div>
           <label for="price">Price:</label>
-          <input type="number" id="price" v-model="form.price" required />
+          <input type="number" id="price" v-model="form.price" :disabled="settings.auto_transaction_price_enabled && form.asset_name && form.date" required />
+          <button type="button" @click="estimatePrice" v-if="settings.auto_transaction_price_enabled && form.asset_name && form.date">Estimate Price</button>
         </div>
         <button type="submit">{{ transactionId ? 'Update' : 'Add' }} Transaction</button>
         <button type="button" @click="closeModal">Cancel</button>
@@ -30,7 +31,7 @@
 </template>
 
 <script>
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, onMounted } from 'vue';
 
 export default {
   name: 'TransactionModal',
@@ -47,6 +48,42 @@ export default {
       type: 'Buy',
       price: 0
     });
+    const settings = reactive({
+      auto_transaction_price_enabled: true
+    });
+
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/users/me/settings');
+        if (response.ok) {
+          const data = await response.json();
+          settings.auto_transaction_price_enabled = data.auto_transaction_price_enabled;
+        } else {
+          console.error("Failed to fetch settings.");
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    };
+
+    const estimatePrice = async () => {
+      if (!form.asset_name || !form.date) {
+        alert("Please enter asset name and date to estimate price.");
+        return;
+      }
+      try {
+        const response = await fetch(`http://localhost:8000/asset/estimate-price?ticker=${form.asset_name}&target_date=${form.date}`);
+        const data = await response.json();
+        if (response.ok) {
+          form.price = data.price;
+        } else {
+          alert(`Failed to estimate price: ${data.detail || response.statusText}`);
+        }
+      } catch (error) {
+        console.error("Error estimating price:", error);
+        alert("Error estimating price.");
+      }
+    };
 
     const resetForm = () => {
       transactionId.value = null;
@@ -68,6 +105,10 @@ export default {
       }
     });
 
+    onMounted(() => {
+      fetchSettings();
+    });
+
     const submitTransaction = () => {
       emit('save-transaction', { id: transactionId.value, ...form });
       closeModal();
@@ -81,8 +122,10 @@ export default {
     return {
       transactionId,
       form,
+      settings,
       submitTransaction,
       closeModal,
+      estimatePrice
     };
   },
 };

@@ -2,19 +2,6 @@ from pydantic import BaseModel
 from datetime import date
 from typing import Optional, List
 
-class UserBase(BaseModel):
-    pass
-
-class UserCreate(UserBase):
-    pass
-
-class User(UserBase):
-    id: int
-    google_sheets_api_key: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
 class PortfolioBase(BaseModel):
     name: str
 
@@ -27,6 +14,30 @@ class Portfolio(PortfolioBase):
 
     class Config:
         from_attributes = True
+
+class UserBase(BaseModel):
+    email: str
+
+class UserCreate(UserBase):
+    password: str
+
+class User(UserBase):
+    id: int
+    is_active: bool
+    portfolios: List[Portfolio] = []
+    google_sheets_api_key: Optional[str] = None
+    google_sheets_spreadsheet_id: Optional[str] = None
+    tinkoff_invest_api_token: Optional[str] = None
+    auto_transaction_price_enabled: bool = True
+
+    class Config:
+        from_attributes = True
+
+class UserSettings(BaseModel):
+    google_sheets_api_key: Optional[str] = None
+    google_sheets_spreadsheet_id: Optional[str] = None
+    tinkoff_invest_api_token: Optional[str] = None
+    auto_transaction_price_enabled: Optional[bool] = None
 
 class AssetBase(BaseModel):
     name: str

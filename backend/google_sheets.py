@@ -1,21 +1,18 @@
 from typing import List, Dict
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
+from googleapiclient.errors import HttpError
 
 # For simplicity, we are using a dummy Credentials object. In a real application,
-# the user's API key would be exchanged for proper OAuth2 credentials or
-# a service account would be used. The 'api_key' parameter from the frontend
-# currently represents a placeholder for such a mechanism.
+# this would involve a proper OAuth2 flow to obtain and refresh credentials.
+# The 'api_key' parameter currently represents a placeholder for such a mechanism.
 
 def read_transactions_from_sheets(api_key: str, spreadsheet_id: str) -> List[Dict]:
-    # In a real scenario, 'api_key' would be used to obtain valid credentials.
-    # For this stub, we'll create dummy credentials to allow the build() function to proceed.
-    # This part needs to be replaced with actual Google Sheets API authentication.
     creds = Credentials(token=None, refresh_token=None, token_uri=None, client_id=None, client_secret=None, scopes=None)
     service = build('sheets', 'v4', credentials=creds)
 
     # The ID and range of a sample spreadsheet.
-    SAMPLE_RANGE_NAME = 'Sheet1!A:D'
+    SAMPLE_RANGE_NAME = 'Sheet1!A:D' # Adjust as needed
 
     result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id, range=SAMPLE_RANGE_NAME).execute()

@@ -1,92 +1,75 @@
-# InvestTrack App
+# InvestTrackApp
 
-A Telegram-style web application for tracking purchases/sales of user assets (stocks, crypto, etc.) with Google Sheets integration.
+A simple investment tracking application.
+
+## Setup
+
+1.  **Clone the repository:**
+
+    ```bash
+    git clone https://github.com/your-username/InvestTrackApp.git
+    cd InvestTrackApp
+    ```
+
+2.  **Backend Setup (Python FastAPI)**
+
+    a.  Create and activate a virtual environment:
+
+        ```bash
+        python -m venv backend/venv
+        source backend/venv/bin/activate
+        ```
+
+    b.  Install dependencies:
+
+        ```bash
+        pip install -r requirements.txt
+        ```
+
+    c.  Run the backend server:
+
+        ```bash
+        uvicorn backend.main:app --reload
+        ```
+
+        The backend API will be available at `http://127.0.0.1:8000`.
+
+3.  **Frontend Setup (Vue.js)**
+
+    a.  Navigate to the frontend directory and install dependencies:
+
+        ```bash
+        cd frontend
+        npm install
+        ```
+
+    b.  Run the frontend development server:
+
+        ```bash
+        npm run dev
+        ```
+
+        The frontend application will be available at `http://127.0.0.1:5173` (or another port if 5173 is in use).
+
+## Configuration (via User Interface)
+
+All API keys and settings are now managed directly within the application's settings page.
+
+1.  **Access Settings:** Navigate to the 'Settings' page within the application.
+2.  **Input Tokens/IDs:** Enter your Google Sheets API Key, Google Sheets Spreadsheet ID, and Tinkoff Invest API Token into the respective input fields.
+3.  **Auto Transaction Price:** Toggle the 'Enable Auto Transaction Price' checkbox to allow the application to automatically fetch asset prices, or to input them manually.
+4.  **Save Settings:** Click the 'Save Settings' button to store your configuration.
 
 ## Project Structure
 
-```
-/project-root
-  /backend
-    main.py
-    models.py
-    database.py
-    crud.py
-    schemas.py
-    google_sheets.py
-  /frontend
-    /src
-      /components
-        Dashboard.vue
-        Transactions.vue
-        Settings.vue
-      /views
-        HomeView.vue
-      App.vue
-      main.js
-      /router
-        index.js
-  requirements.txt
-  package.json
-  README.md
-```
+*   **backend/**: FastAPI application for API endpoints, database interactions, and integration with external services like Tinkoff Invest and Google Sheets.
+*   **frontend/**: Vue.js application for the user interface.
 
-## Setup and Run Instructions
 
-### Backend Setup
-
-1.  **Navigate to the project root directory (where `backend` and `frontend` folders are located):**
-    ```bash
-    cd /Users/nikitakreml/Documents/invest_track_app
-    ```
-2.  **Create a Python virtual environment (recommended) in the `backend` directory:**
-    ```bash
-    python3 -m venv backend/venv
-    ```
-3.  **Activate the virtual environment:**
-    *   On macOS/Linux:
-        ```bash
-        source backend/venv/bin/activate
-        ```
-    *   On Windows:
-        ```bash
-        .\backend\venv\Scripts\activate
-        ```
-4.  **Install the dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-5.  **Run the FastAPI application from the project root:**
-    ```bash
-    uvicorn backend.main:app --reload
-    ```
-    The backend will be running on `http://127.0.0.1:8000`.
-
-### Frontend Setup
-
-1.  **Navigate to the frontend directory:**
-    ```bash
-    cd frontend
-    ```
-2.  **Install the Node.js dependencies:**
-    ```bash
-    npm install
-    ```
-3.  **Run the Vue.js development server:**
-    ```bash
-    npm run dev
-    ```
-    The frontend will be running on `http://localhost:5173` (or another port as indicated by Vite).
-
-## Google Sheets Integration (Stubbed)
-
-- The Google Sheets integration is currently stubbed out in `backend/google_sheets.py`.
-- You can interact with the dummy Google Sheets functions via the `/settings` page in the frontend.
-
-## Color Palette
-
+#Project Colors
 - **Primary Background**: `#F2F2F2`
 - **Secondary Background/Borders**: `#CBCBCB`
 - **Accent/Success**: `#174D38`
 - **Danger/Error**: `#4D1717`
 
-font: Montserrat
+Font: Montserrat
