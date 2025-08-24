@@ -15,7 +15,7 @@
         <label for="tinkoffInvestApiToken">Tinkoff Invest API Token:</label>
         <input type="text" id="tinkoffInvestApiToken" v-model="settings.tinkoff_invest_api_token" />
       </div>
-      <div class="form-group">
+      <div class="form-group checkbox-group">
         <input type="checkbox" id="autoTransactionPriceEnabled" v-model="settings.auto_transaction_price_enabled" />
         <label for="autoTransactionPriceEnabled">Enable Auto Transaction Price</label>
       </div>
@@ -86,7 +86,8 @@ export default {
         if (response.ok) {
           sheetsMessage.value = `Read success! Transactions: ${JSON.stringify(data.transactions)}`;
         } else {
-          sheetsMessage.value = `Read failed: ${data.detail || response.statusText}`;
+          const errorData = await response.json();
+          sheetsMessage.value = `Read failed: ${errorData.detail || response.statusText}`;
         }
       } catch (error) {
         console.error("Error reading from sheets:", error);
@@ -139,76 +140,114 @@ export default {
 
 <style scoped>
 .settings-container {
-  padding: 20px;
-  background-color: #F2F2F2;
-  color: #174D38;
+  padding: 40px;
+  background-color: var(--primary-background);
+  color: var(--text-color-light);
+  min-height: calc(100vh - 100px);
 }
 
 h1 {
-  color: #4D1717;
-  margin-bottom: 20px;
+  color: var(--text-color-dark);
+  margin-bottom: 25px;
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 
 p {
-  color: #174D38;
-}
-
-h2 {
-  color: #174D38;
-  margin-top: 30px;
-  margin-bottom: 15px;
-}
-
-.settings-form, .sheets-integration {
-  background-color: #FFFFFF;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: var(--text-color-light);
+  font-size: 1.1rem;
   margin-bottom: 20px;
 }
 
+h2 {
+  color: var(--text-color-dark);
+  margin-top: 40px;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.settings-form, .sheets-integration {
+  background-color: var(--secondary-background);
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 6px 20px rgba(var(--color-darkest-rgb), 0.4);
+  margin: 30px auto;
+  max-width: 600px;
+  animation: fadeIn 0.6s ease-out forwards;
+  border: 1px solid rgba(var(--color-light-grey-blue-rgb), 0.1);
+}
+
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: var(--color-darkest); /* Darker background for checkbox group */
+  border-radius: 8px;
+  border: 1px solid var(--color-dark-grey-blue);
+  box-shadow: inset 0 1px 3px rgba(var(--color-darkest-rgb), 0.3);
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin-right: 15px;
+  transform: scale(1);
+  accent-color: var(--accent-color); /* Style checkbox itself */
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.checkbox-group input[type="checkbox"]:checked {
+  transform: scale(1.1);
+}
+
+.checkbox-group label {
+  margin-bottom: 0;
+  font-size: 1rem;
+  color: var(--text-color-dark); /* Label white */
+  font-weight: 500;
 }
 
 label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #174D38;
+  /* Global label styles already defined in App.vue, ensure consistency */
 }
 
 input[type="text"] {
-  width: calc(100% - 22px);
-  padding: 10px;
-  border: 1px solid #CBCBCB;
-  border-radius: 4px;
-  font-size: 1rem;
+  /* Global input styles already defined in App.vue, ensure consistency */
 }
 
 button {
-  padding: 10px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  margin-right: 10px;
+  /* Global button styles already defined in App.vue, ensure consistency */
 }
 
 .save-button,
 .read-button {
-  background-color: #174D38;
-  color: white;
+  background-color: var(--accent-color);
+  color: var(--text-color-dark);
 }
 
 .write-button {
-  background-color: #CBCBCB;
-  color: #174D38;
+  background-color: var(--secondary-background);
+  color: var(--text-color-light);
+  border: 1px solid var(--color-dark-grey-blue);
 }
 
 .sheets-message {
-  margin-top: 15px;
+  margin-top: 20px;
   font-style: italic;
-  color: #4D1717;
+  color: var(--danger-color);
+  font-size: 0.95rem;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

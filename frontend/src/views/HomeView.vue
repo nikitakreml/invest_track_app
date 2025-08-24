@@ -13,17 +13,36 @@ export default {
 
 <style scoped>
 .home {
-  padding: 20px;
-  background-color: #F2F2F2;
-  color: #174D38;
+  padding: 80px 20px; /* Increased padding for more vertical space */
+  background-color: var(--primary-background);
+  color: var(--text-color-light); /* Default text color light */
+  min-height: calc(100vh - 100px); /* Adjust based on fixed nav height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center; /* Ensure text is centered */
+  animation: fadeIn 0.8s ease-out forwards;
 }
 
 h1 {
-  color: #4D1717;
-  margin-bottom: 10px;
+  color: var(--text-color-dark); /* Main heading white */
+  margin-bottom: 15px;
+  font-size: 3.5rem; /* Larger heading */
+  font-weight: 900; /* Extra bold */
+  letter-spacing: -0.04em;
+  line-height: 1.1;
 }
 
 p {
-  color: #174D38;
+  color: var(--text-color-light); /* Paragraph text light grey-blue */
+  font-size: 1.3rem;
+  max-width: 600px;
+  margin-bottom: 30px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

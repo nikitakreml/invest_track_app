@@ -1,30 +1,32 @@
 <template>
-  <div class="modal-overlay" v-if="isVisible" @click.self="closeModal">
+  <div class="modal-overlay" :class="{ active: isVisible }" v-if="isVisible" @click.self="closeModal">
     <div class="modal-content">
       <h2>{{ transactionId ? 'Edit Transaction' : 'Add New Transaction' }}</h2>
       <form @submit.prevent="submitTransaction">
-        <div>
+        <div class="form-group">
           <label for="assetName">Asset Name:</label>
           <input type="text" id="assetName" v-model="form.asset_name" required />
         </div>
-        <div>
+        <div class="form-group">
           <label for="date">Date:</label>
           <input type="date" id="date" v-model="form.date" required />
         </div>
-        <div>
+        <div class="form-group">
           <label for="type">Type:</label>
           <select id="type" v-model="form.type" required>
             <option value="Buy">Buy</option>
             <option value="Sell">Sell</option>
           </select>
         </div>
-        <div>
+        <div class="form-group">
           <label for="price">Price:</label>
           <input type="number" id="price" v-model="form.price" :disabled="settings.auto_transaction_price_enabled && form.asset_name && form.date" required />
-          <button type="button" @click="estimatePrice" v-if="settings.auto_transaction_price_enabled && form.asset_name && form.date">Estimate Price</button>
+          <button type="button" class="estimate-price-button" @click="estimatePrice" v-if="settings.auto_transaction_price_enabled && form.asset_name && form.date">Estimate Price</button>
         </div>
-        <button type="submit">{{ transactionId ? 'Update' : 'Add' }} Transaction</button>
-        <button type="button" @click="closeModal">Cancel</button>
+        <div class="modal-actions">
+          <button type="submit" class="submit-button">{{ transactionId ? 'Update' : 'Add' }} Transaction</button>
+          <button type="button" class="cancel-button" @click="closeModal">Cancel</button>
+        </div>
       </form>
     </div>
   </div>
@@ -138,69 +140,126 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(77, 23, 23, 0.5); /* Using #4D1717 with 50% opacity */
+  background: rgba(var(--color-darkest-rgb), 0.7); /* Using darkest color with opacity */
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
 }
 
 .modal-content {
-  background: #F2F2F2; /* Changed from white to F2F2F2 for consistency */
-  padding: 20px;
-  border-radius: 8px;
-  min-width: 400px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: var(--secondary-background); /* Use secondary background for modal content */
+  padding: 30px;
+  border-radius: 15px;
+  min-width: 450px; /* Slightly wider modal */
+  max-width: 90%;
+  box-shadow: 0 8px 30px rgba(var(--color-darkest-rgb), 0.6);
+  transform: scale(0.8);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  color: var(--text-color-light); /* Default text color in modal */
+  border: 1px solid rgba(var(--color-light-grey-blue-rgb), 0.1);
+}
+
+.modal-overlay.active .modal-content {
+  transform: scale(1);
+  opacity: 1;
 }
 
 .modal-content h2 {
   margin-top: 0;
-  margin-bottom: 20px;
-  color: #4D1717;
+  margin-bottom: 25px;
+  color: var(--text-color-dark); /* Heading white */
+  font-size: 1.8rem;
+  font-weight: 700;
+  text-align: center;
 }
 
-.modal-content form div {
-  margin-bottom: 15px;
+.form-group {
+  margin-bottom: 20px;
 }
 
 .modal-content label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #174D38;
+  margin-bottom: 8px; /* Increased margin */
+  font-weight: 500;
+  color: var(--text-color-light); /* Labels light grey-blue */
+  font-size: 0.95rem;
 }
 
 .modal-content input[type="text"],
 .modal-content input[type="date"],
 .modal-content input[type="number"],
 .modal-content select {
-  width: calc(100% - 22px); /* Account for padding and border */
-  padding: 10px;
-  border: 1px solid #CBCBCB;
-  border-radius: 4px;
+  width: 100%; /* Set width to 100% */
+  box-sizing: border-box; /* Include padding and border in width */
+  padding: 12px;
+  border: 1px solid var(--color-dark-grey-blue);
+  border-radius: 8px;
   font-size: 1rem;
+  background-color: var(--color-darkest); /* Inputs are dark */
+  color: var(--text-color-dark); /* Light text in dark inputs */
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.modal-content input:focus, .modal-content select:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.4);
+  outline: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px; /* Spacing between buttons */
+  margin-top: 30px;
 }
 
 .modal-content button {
-  padding: 10px 15px;
+  padding: 12px 25px;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 1rem;
-  margin-right: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.modal-content button[type="submit"] {
-  background-color: #174D38;
-  color: white;
+.modal-content button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 5px 15px rgba(var(--color-darkest-rgb), 0.3);
 }
 
-.modal-content button[type="button"] {
-  background-color: #4D1717;
-  color: white;
+.modal-content .submit-button {
+  background-color: var(--accent-color);
+  color: var(--text-color-dark);
 }
 
-.modal-content button[type="button"]:last-child {
-  margin-right: 0;
+.modal-content .cancel-button {
+  background-color: var(--color-dark-grey-blue); /* Subtle dark background for cancel */
+  color: var(--text-color-light);
+}
+
+.estimate-price-button {
+  margin-top: 10px; /* Space between input and button */
+  display: block; /* Full width for button below input */
+  width: 100%; /* Ensure button also takes full width */
+  background-color: var(--color-deep-blue); /* Distinct color for estimate button */
+  color: var(--text-color-dark);
+  border: 1px solid var(--color-deep-blue);
+}
+
+.estimate-price-button:hover {
+  filter: brightness(1.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--color-deep-blue-rgb), 0.4);
 }
 </style>
